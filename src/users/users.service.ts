@@ -15,6 +15,10 @@ export class UsersService {
   findOne(id: number) {
     // fineOneBy returns record that matches data passed into arg OR
     // returns null if nothing is found
+
+    if(!id) {
+      return null
+    }
     return this.repo.findOneBy({ id: id });
   }
 

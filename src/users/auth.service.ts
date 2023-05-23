@@ -14,7 +14,7 @@ export class AuthService {
     // see if email is in use
     const users = await this.usersService.find(email);
     if (users.length) {
-      throw new BadRequestException('Email already in use.')
+      throw new BadRequestException('Email already in use, please choose another.')
     }
 
     // hash the users password
@@ -23,7 +23,7 @@ export class AuthService {
     // hash salt and password together
     const hash = (await scrypt(password, salt, 32)) as Buffer;
     // joing hashed result and salt together
-    const result = salt + '.' + hash;
+    const result = salt + '.' + hash.toString('hex');
 
     // create a new user and save it
     const user = await this.usersService.create(email, result);
@@ -31,19 +31,24 @@ export class AuthService {
     return user;
   }
 
-  async signin(email: string, password: string) {
+  async signin(email: string, plainTextPassword: string) {
+    // find user by id
     const [user] = await this.usersService.find(email);
-    
+    // if user is not found throw an error
     if(!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found, please try again.');
     }
 
+    // extract salt and hash from USER password
     const [salt, storedHash] = user.password.split('.');
-    const hash = (await scrypt(password, salt, 32)) as Buffer;
+    // create new hash using plain text password
+    const hash = (await scrypt(plainTextPassword, salt, 32)) as Buffer;
 
+    // compare hashes
     if(storedHash !== hash.toString('hex')) {
-      throw new BadRequestException('Bad password');
+      throw new BadRequestException('Incorrect password!')
     }
-    return user;
+
+    return user
   }
 }
